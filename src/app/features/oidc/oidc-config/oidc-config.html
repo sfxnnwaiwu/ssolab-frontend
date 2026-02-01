@@ -1,1 +1,405 @@
-<p>oidc-config works!</p>
+<div class="min-h-screen bg-linear-to-br from-purple-50 via-white to-purple-100">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <a
+                        routerLink="/"
+                        class="flex h-10 w-10 items-center justify-center rounded-lg bg-linear-to-br from-blue-600 to-purple-600 transition-transform hover:scale-105"
+                    >
+                        <svg
+                            class="h-6 w-6 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                            />
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900 sm:text-2xl">
+                            OIDC Configuration
+                        </h1>
+                        <p class="text-xs text-gray-500 sm:text-sm">
+                            Configure your OpenID Connect Provider
+                        </p>
+                    </div>
+                </div>
+                <a
+                    routerLink="/"
+                    class="flex items-center space-x-2 text-sm text-gray-600 transition-colors hover:text-gray-900"
+                >
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                        />
+                    </svg>
+                    <span class="hidden sm:inline">Back to Home</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+        <!-- Protocol Badge -->
+        <div class="mb-6 flex items-center space-x-2">
+            <span
+                class="inline-flex items-center rounded-full bg-purple-100 px-3 py-1 text-sm font-medium text-purple-800"
+            >
+                <svg class="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                    />
+                </svg>
+                OpenID Connect (OIDC)
+            </span>
+        </div>
+
+        <!-- Configuration Form Card -->
+        <div class="overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-gray-200">
+            <div class="bg-linear-to-r from-purple-600 to-purple-700 px-6 py-5 sm:px-8">
+                <h2 class="text-xl font-bold text-white sm:text-2xl">Identity Provider Details</h2>
+                <p class="mt-1 text-sm text-purple-100">
+                    Enter your OIDC provider configuration to test the authentication flow
+                </p>
+            </div>
+
+            <form class="space-y-6 p-6 sm:p-8" (ngSubmit)="onSubmit()">
+                <!-- Client ID -->
+                <div>
+                    <label for="clientId" class="block text-sm font-medium text-gray-700">
+                        Client ID
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500">
+                        The public identifier for your application registered with the OIDC provider
+                    </p>
+                    <input
+                        type="text"
+                        id="clientId"
+                        [value]="formData().clientId"
+                        (input)="updateField('clientId', $any($event.target).value)"
+                        placeholder="e.g., abc123xyz456"
+                        class="mt-2 block w-full rounded-lg border border-gray-300 px-4 py-3 shadow-sm transition-colors focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none"
+                        [class.border-red-500]="errors().clientId"
+                        [class.focus:border-red-500]="errors().clientId"
+                        [class.focus:ring-red-500/20]="errors().clientId"
+                    />
+                    @if (errors().clientId) {
+                        <p class="mt-2 flex items-center text-sm text-red-600">
+                            <svg class="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
+                            {{ errors().clientId }}
+                        </p>
+                    }
+                </div>
+
+                <!-- Client Secret -->
+                <div>
+                    <label for="clientSecret" class="block text-sm font-medium text-gray-700">
+                        Client Secret
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500">
+                        The confidential secret for your application (keep this secure)
+                    </p>
+                    <input
+                        type="password"
+                        id="clientSecret"
+                        [value]="formData().clientSecret"
+                        (input)="updateField('clientSecret', $any($event.target).value)"
+                        placeholder="••••••••••••••••"
+                        class="mt-2 block w-full rounded-lg border border-gray-300 px-4 py-3 shadow-sm transition-colors focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none"
+                        [class.border-red-500]="errors().clientSecret"
+                        [class.focus:border-red-500]="errors().clientSecret"
+                        [class.focus:ring-red-500/20]="errors().clientSecret"
+                    />
+                    @if (errors().clientSecret) {
+                        <p class="mt-2 flex items-center text-sm text-red-600">
+                            <svg class="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
+                            {{ errors().clientSecret }}
+                        </p>
+                    }
+                </div>
+
+                <!-- Discovery URL -->
+                <div>
+                    <label for="discoveryUrl" class="block text-sm font-medium text-gray-700">
+                        Discovery URL
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500">
+                        The OIDC discovery endpoint (typically ends with
+                        /.well-known/openid-configuration)
+                    </p>
+                    <input
+                        type="url"
+                        id="discoveryUrl"
+                        [value]="formData().discoveryUrl"
+                        (input)="updateField('discoveryUrl', $any($event.target).value)"
+                        placeholder="https://idp.example.com/.well-known/openid-configuration"
+                        class="mt-2 block w-full rounded-lg border border-gray-300 px-4 py-3 shadow-sm transition-colors focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none"
+                        [class.border-red-500]="errors().discoveryUrl"
+                        [class.focus:border-red-500]="errors().discoveryUrl"
+                        [class.focus:ring-red-500/20]="errors().discoveryUrl"
+                    />
+                    @if (errors().discoveryUrl) {
+                        <p class="mt-2 flex items-center text-sm text-red-600">
+                            <svg class="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
+                            {{ errors().discoveryUrl }}
+                        </p>
+                    }
+                </div>
+
+                <!-- Response Type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">
+                        Response Type
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500">
+                        Select the OAuth 2.0 flow type (Authorization Code is recommended)
+                    </p>
+                    <div class="mt-3 space-y-3">
+                        @for (type of responseTypes; track type.value) {
+                            <label
+                                class="flex cursor-pointer items-start rounded-lg border p-4 transition-all hover:bg-gray-50"
+                                [class.border-purple-500]="formData().responseType === type.value"
+                                [class.bg-purple-50]="formData().responseType === type.value"
+                                [class.border-gray-300]="formData().responseType !== type.value"
+                            >
+                                <input
+                                    type="radio"
+                                    name="responseType"
+                                    [value]="type.value"
+                                    [checked]="formData().responseType === type.value"
+                                    (change)="updateResponseType(type.value)"
+                                    class="mt-1 h-4 w-4 border-gray-300 text-purple-600 focus:ring-purple-500"
+                                />
+                                <div class="ml-3 flex-1">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-medium text-gray-900">{{
+                                            type.label
+                                        }}</span>
+                                        @if (type.value === 'code') {
+                                            <span
+                                                class="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800"
+                                            >
+                                                Recommended
+                                            </span>
+                                        }
+                                    </div>
+                                    <p class="mt-1 text-sm text-gray-500">{{ type.description }}</p>
+                                </div>
+                            </label>
+                        }
+                    </div>
+                    @if (errors().responseType) {
+                        <p class="mt-2 flex items-center text-sm text-red-600">
+                            <svg class="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
+                            {{ errors().responseType }}
+                        </p>
+                    }
+                </div>
+
+                <!-- Scopes -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">
+                        Scopes
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500">
+                        Select the permissions/scopes to request (openid is required)
+                    </p>
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                        @for (scope of availableScopes; track scope.value) {
+                            <label
+                                class="flex cursor-pointer items-start rounded-lg border p-3 transition-all hover:bg-gray-50"
+                                [class.border-purple-500]="isScopeSelected(scope.value)"
+                                [class.bg-purple-50]="isScopeSelected(scope.value)"
+                                [class.border-gray-300]="!isScopeSelected(scope.value)"
+                                [class.cursor-not-allowed]="scope.value === 'openid'"
+                                [class.opacity-75]="scope.value === 'openid'"
+                            >
+                                <input
+                                    type="checkbox"
+                                    [checked]="isScopeSelected(scope.value)"
+                                    [disabled]="scope.value === 'openid'"
+                                    (change)="toggleScope(scope.value)"
+                                    class="mt-0.5 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                />
+                                <div class="ml-3 flex-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-mono text-sm font-medium text-gray-900">
+                                            {{ scope.label }}
+                                        </span>
+                                        @if (scope.value === 'openid') {
+                                            <span
+                                                class="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800"
+                                            >
+                                                Required
+                                            </span>
+                                        }
+                                    </div>
+                                    <p class="mt-0.5 text-xs text-gray-500">
+                                        {{ scope.description }}
+                                    </p>
+                                </div>
+                            </label>
+                        }
+                    </div>
+                    @if (errors().scopes) {
+                        <p class="mt-2 flex items-center text-sm text-red-600">
+                            <svg class="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
+                            {{ errors().scopes }}
+                        </p>
+                    }
+                </div>
+
+                <!-- Success Message -->
+                @if (validationSuccess()) {
+                    <div class="flex items-center rounded-lg bg-green-50 p-4 ring-1 ring-green-200">
+                        <svg class="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path
+                                fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clip-rule="evenodd"
+                            />
+                        </svg>
+                        <p class="ml-3 text-sm font-medium text-green-800">
+                            Configuration validated successfully! You can now start the SSO flow.
+                        </p>
+                    </div>
+                }
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col gap-3 pt-4 sm:flex-row">
+                    <button
+                        type="button"
+                        (click)="onTestConnection()"
+                        [disabled]="isValidating()"
+                        class="flex items-center justify-center gap-2 rounded-lg border-2 border-purple-600 bg-white px-6 py-3 font-semibold text-purple-600 shadow-sm transition-all hover:bg-purple-50 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
+                    >
+                        @if (isValidating()) {
+                            <svg
+                                class="h-5 w-5 animate-spin"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                />
+                            </svg>
+                            <span>Validating...</span>
+                        } @else {
+                            <svg
+                                class="h-5 w-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                            </svg>
+                            <span>Test Connection</span>
+                        }
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-6 py-3 font-semibold text-white shadow-sm transition-all hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:outline-none sm:flex-1"
+                    >
+                        <span>Start SSO Flow</span>
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M13 7l5 5m0 0l-5 5m5-5H6"
+                            />
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Info Box -->
+        <div class="mt-8 rounded-xl bg-purple-50 p-6 ring-1 ring-purple-200">
+            <div class="flex items-start space-x-3">
+                <svg
+                    class="h-6 w-6 shrink-0 text-purple-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                </svg>
+                <div>
+                    <h3 class="font-semibold text-purple-900">Configuration Tips</h3>
+                    <ul class="mt-2 space-y-1 text-sm text-purple-800">
+                        <li>• All fields are required for OIDC authentication</li>
+                        <li>• The discovery URL auto-configures endpoints from your IdP</li>
+                        <li>• Authorization Code flow is the most secure option</li>
+                        <li>• The "openid" scope is mandatory and cannot be deselected</li>
+                        <li>• Use "Test Connection" to validate before testing authentication</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>

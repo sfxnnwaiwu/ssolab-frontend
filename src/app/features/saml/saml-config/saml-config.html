@@ -1,1 +1,323 @@
-<p>saml-config works!</p>
+<div class="min-h-screen bg-linear-to-br from-blue-50 via-white to-blue-100">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <a
+                        routerLink="/"
+                        class="flex h-10 w-10 items-center justify-center rounded-lg bg-linear-to-br from-blue-600 to-purple-600 transition-transform hover:scale-105"
+                    >
+                        <svg
+                            class="h-6 w-6 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                            />
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900 sm:text-2xl">
+                            SAML Configuration
+                        </h1>
+                        <p class="text-xs text-gray-500 sm:text-sm">
+                            Configure your SAML Identity Provider
+                        </p>
+                    </div>
+                </div>
+                <a
+                    routerLink="/"
+                    class="flex items-center space-x-2 text-sm text-gray-600 transition-colors hover:text-gray-900"
+                >
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                        />
+                    </svg>
+                    <span class="hidden sm:inline">Back to Home</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+        <!-- Protocol Badge -->
+        <div class="mb-6 flex items-center space-x-2">
+            <span
+                class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800"
+            >
+                <svg class="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                    />
+                </svg>
+                SAML 2.0 Protocol
+            </span>
+        </div>
+
+        <!-- Configuration Form Card -->
+        <div class="overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-gray-200">
+            <div class="bg-linear-to-r from-blue-600 to-blue-700 px-6 py-5 sm:px-8">
+                <h2 class="text-xl font-bold text-white sm:text-2xl">Identity Provider Details</h2>
+                <p class="mt-1 text-sm text-blue-100">
+                    Enter your SAML IdP configuration to test the SSO flow
+                </p>
+            </div>
+
+            <form class="space-y-6 p-6 sm:p-8" (ngSubmit)="onSubmit()">
+                <!-- IdP Name -->
+                <div>
+                    <label for="idpName" class="block text-sm font-medium text-gray-700">
+                        IdP Name / Identifier
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500">
+                        A friendly name for your identity provider (e.g., "Okta Production", "Azure
+                        AD")
+                    </p>
+                    <input
+                        type="text"
+                        id="idpName"
+                        [value]="formData().idpName"
+                        (input)="updateField('idpName', $any($event.target).value)"
+                        placeholder="e.g., Okta Corporate IdP"
+                        class="mt-2 block w-full rounded-lg border border-gray-300 px-4 py-3 shadow-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                        [class.border-red-500]="errors().idpName"
+                        [class.focus:border-red-500]="errors().idpName"
+                        [class.focus:ring-red-500/20]="errors().idpName"
+                    />
+                    @if (errors().idpName) {
+                        <p class="mt-2 flex items-center text-sm text-red-600">
+                            <svg class="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
+                            {{ errors().idpName }}
+                        </p>
+                    }
+                </div>
+
+                <!-- Entity ID -->
+                <div>
+                    <label for="entityId" class="block text-sm font-medium text-gray-700">
+                        Entity ID
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500">
+                        The unique identifier for your SAML Identity Provider (usually a URL)
+                    </p>
+                    <input
+                        type="url"
+                        id="entityId"
+                        [value]="formData().entityId"
+                        (input)="updateField('entityId', $any($event.target).value)"
+                        placeholder="https://idp.example.com/saml/metadata"
+                        class="mt-2 block w-full rounded-lg border border-gray-300 px-4 py-3 shadow-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                        [class.border-red-500]="errors().entityId"
+                        [class.focus:border-red-500]="errors().entityId"
+                        [class.focus:ring-red-500/20]="errors().entityId"
+                    />
+                    @if (errors().entityId) {
+                        <p class="mt-2 flex items-center text-sm text-red-600">
+                            <svg class="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
+                            {{ errors().entityId }}
+                        </p>
+                    }
+                </div>
+
+                <!-- SSO URL -->
+                <div>
+                    <label for="ssoUrl" class="block text-sm font-medium text-gray-700">
+                        SSO URL
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500">
+                        The HTTPS endpoint where SAML authentication requests are sent
+                    </p>
+                    <input
+                        type="url"
+                        id="ssoUrl"
+                        [value]="formData().ssoUrl"
+                        (input)="updateField('ssoUrl', $any($event.target).value)"
+                        placeholder="https://idp.example.com/saml/sso"
+                        class="mt-2 block w-full rounded-lg border border-gray-300 px-4 py-3 shadow-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                        [class.border-red-500]="errors().ssoUrl"
+                        [class.focus:border-red-500]="errors().ssoUrl"
+                        [class.focus:ring-red-500/20]="errors().ssoUrl"
+                    />
+                    @if (errors().ssoUrl) {
+                        <p class="mt-2 flex items-center text-sm text-red-600">
+                            <svg class="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
+                            {{ errors().ssoUrl }}
+                        </p>
+                    }
+                </div>
+
+                <!-- Certificate -->
+                <div>
+                    <label for="certificate" class="block text-sm font-medium text-gray-700">
+                        X.509 Certificate
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500">
+                        The public certificate used to verify SAML assertions (PEM format)
+                    </p>
+                    <textarea
+                        id="certificate"
+                        rows="8"
+                        [value]="formData().certificate"
+                        (input)="updateField('certificate', $any($event.target).value)"
+                        placeholder="-----BEGIN CERTIFICATE-----&#10;MIIDXTCCAkWgAwIBAgIJAKL0UG...&#10;-----END CERTIFICATE-----"
+                        class="mt-2 block w-full rounded-lg border border-gray-300 px-4 py-3 font-mono text-sm shadow-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                        [class.border-red-500]="errors().certificate"
+                        [class.focus:border-red-500]="errors().certificate"
+                        [class.focus:ring-red-500/20]="errors().certificate"
+                    ></textarea>
+                    @if (errors().certificate) {
+                        <p class="mt-2 flex items-center text-sm text-red-600">
+                            <svg class="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
+                            {{ errors().certificate }}
+                        </p>
+                    }
+                </div>
+
+                <!-- Success Message -->
+                @if (validationSuccess()) {
+                    <div class="flex items-center rounded-lg bg-green-50 p-4 ring-1 ring-green-200">
+                        <svg class="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path
+                                fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clip-rule="evenodd"
+                            />
+                        </svg>
+                        <p class="ml-3 text-sm font-medium text-green-800">
+                            Configuration validated successfully! You can now start the SSO flow.
+                        </p>
+                    </div>
+                }
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col gap-3 pt-4 sm:flex-row">
+                    <button
+                        type="button"
+                        (click)="onTestConnection()"
+                        [disabled]="isValidating()"
+                        class="flex items-center justify-center gap-2 rounded-lg border-2 border-blue-600 bg-white px-6 py-3 font-semibold text-blue-600 shadow-sm transition-all hover:bg-blue-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
+                    >
+                        @if (isValidating()) {
+                            <svg
+                                class="h-5 w-5 animate-spin"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                />
+                            </svg>
+                            <span>Validating...</span>
+                        } @else {
+                            <svg
+                                class="h-5 w-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                            </svg>
+                            <span>Test Connection</span>
+                        }
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white shadow-sm transition-all hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none sm:flex-1"
+                    >
+                        <span>Start SSO Flow</span>
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M13 7l5 5m0 0l-5 5m5-5H6"
+                            />
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Info Box -->
+        <div class="mt-8 rounded-xl bg-blue-50 p-6 ring-1 ring-blue-200">
+            <div class="flex items-start space-x-3">
+                <svg
+                    class="h-6 w-6 shrink-0 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                </svg>
+                <div>
+                    <h3 class="font-semibold text-blue-900">Configuration Tips</h3>
+                    <ul class="mt-2 space-y-1 text-sm text-blue-800">
+                        <li>• All fields are required for SAML authentication</li>
+                        <li>• The certificate should be in PEM format with BEGIN/END markers</li>
+                        <li>• SSO URL must use HTTPS protocol for security</li>
+                        <li>
+                            • Use "Test Connection" to validate your configuration before testing
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
