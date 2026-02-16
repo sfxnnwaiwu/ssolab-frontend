@@ -1,0 +1,147 @@
+<div
+    class="flex min-h-screen items-center justify-center bg-linear-to-br from-indigo-500 to-purple-600 p-8"
+>
+    <div class="w-full max-w-md rounded-xl bg-white p-12 shadow-2xl">
+        <h1 class="mb-2 text-3xl font-bold text-gray-800">Create Account</h1>
+        <p class="mb-8 text-gray-600">Start testing your SSO configurations</p>
+
+        <form [formGroup]="signupForm" (ngSubmit)="onSubmit()">
+            @if (errorMessage()) {
+                <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+                    {{ errorMessage() }}
+                </div>
+            }
+
+            <div class="mb-6">
+                <label for="name" class="mb-2 block font-medium text-gray-700">Full Name</label>
+                <input
+                    type="text"
+                    id="name"
+                    formControlName="name"
+                    placeholder="Enter your full name"
+                    class="w-full rounded-lg border border-gray-300 px-4 py-3 transition focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    [class.border-red-500]="
+                        signupForm.get('name')?.invalid && signupForm.get('name')?.touched
+                    "
+                />
+                @if (
+                    signupForm.get('name')?.hasError('required') && signupForm.get('name')?.touched
+                ) {
+                    <span class="mt-1 block text-sm text-red-500">Name is required</span>
+                }
+                @if (
+                    signupForm.get('name')?.hasError('minlength') && signupForm.get('name')?.touched
+                ) {
+                    <span class="mt-1 block text-sm text-red-500"
+                        >Name must be at least 2 characters</span
+                    >
+                }
+            </div>
+
+            <div class="mb-6">
+                <label for="email" class="mb-2 block font-medium text-gray-700">Email</label>
+                <input
+                    type="email"
+                    id="email"
+                    formControlName="email"
+                    placeholder="Enter your email"
+                    class="w-full rounded-lg border border-gray-300 px-4 py-3 transition focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    [class.border-red-500]="
+                        signupForm.get('email')?.invalid && signupForm.get('email')?.touched
+                    "
+                />
+                @if (
+                    signupForm.get('email')?.hasError('required') &&
+                    signupForm.get('email')?.touched
+                ) {
+                    <span class="mt-1 block text-sm text-red-500">Email is required</span>
+                }
+                @if (
+                    signupForm.get('email')?.hasError('email') && signupForm.get('email')?.touched
+                ) {
+                    <span class="mt-1 block text-sm text-red-500">Please enter a valid email</span>
+                }
+            </div>
+
+            <div class="mb-6">
+                <label for="password" class="mb-2 block font-medium text-gray-700">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    formControlName="password"
+                    placeholder="Create a password"
+                    class="w-full rounded-lg border border-gray-300 px-4 py-3 transition focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    [class.border-red-500]="
+                        signupForm.get('password')?.invalid && signupForm.get('password')?.touched
+                    "
+                />
+                @if (
+                    signupForm.get('password')?.hasError('required') &&
+                    signupForm.get('password')?.touched
+                ) {
+                    <span class="mt-1 block text-sm text-red-500">Password is required</span>
+                }
+                @if (
+                    signupForm.get('password')?.hasError('minlength') &&
+                    signupForm.get('password')?.touched
+                ) {
+                    <span class="mt-1 block text-sm text-red-500"
+                        >Password must be at least 6 characters</span
+                    >
+                }
+            </div>
+
+            <div class="mb-6">
+                <label for="confirmPassword" class="mb-2 block font-medium text-gray-700"
+                    >Confirm Password</label
+                >
+                <input
+                    type="password"
+                    id="confirmPassword"
+                    formControlName="confirmPassword"
+                    placeholder="Confirm your password"
+                    class="w-full rounded-lg border border-gray-300 px-4 py-3 transition focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    [class.border-red-500]="
+                        signupForm.get('confirmPassword')?.invalid &&
+                        signupForm.get('confirmPassword')?.touched
+                    "
+                />
+                @if (
+                    signupForm.get('confirmPassword')?.hasError('required') &&
+                    signupForm.get('confirmPassword')?.touched
+                ) {
+                    <span class="mt-1 block text-sm text-red-500"
+                        >Please confirm your password</span
+                    >
+                }
+                @if (
+                    signupForm.hasError('passwordMismatch') &&
+                    signupForm.get('confirmPassword')?.touched
+                ) {
+                    <span class="mt-1 block text-sm text-red-500">Passwords do not match</span>
+                }
+            </div>
+
+            <button
+                type="submit"
+                class="w-full rounded-lg bg-linear-to-r from-indigo-500 to-purple-600 py-3.5 font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
+                [disabled]="signupForm.invalid || loading()"
+            >
+                @if (loading()) {
+                    <span>Creating account...</span>
+                } @else {
+                    <span>Create Account</span>
+                }
+            </button>
+        </form>
+
+        <div class="mt-8 border-t border-gray-200 pt-8 text-center">
+            <p class="text-gray-600">
+                Already have an account?
+                <a routerLink="/login" class="ml-1 font-semibold text-indigo-600 hover:underline"
+                    >Sign in</a
+                >
+            </p>
+        </div>
+    </div>
+</div>

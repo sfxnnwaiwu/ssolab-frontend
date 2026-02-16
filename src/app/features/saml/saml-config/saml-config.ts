@@ -1,9 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { environment } from '../../../../environments/environment';
 
-interface SamlConfigForm {
+interface SamlConfigDto {
     idpName: string;
     entityId: string;
     ssoUrl: string;
@@ -12,102 +14,85 @@ interface SamlConfigForm {
 
 @Component({
     selector: 'app-saml-config',
-    imports: [CommonModule, RouterLink, FormsModule],
+    standalone: true,
+    imports: [CommonModule, RouterLink, ReactiveFormsModule],
     templateUrl: './saml-config.html',
     styleUrl: './saml-config.css',
 })
-export class SamlConfig {
-    protected readonly formData = signal<SamlConfigForm>({
-        idpName: '',
-        entityId: '',
-        ssoUrl: '',
-        certificate: '',
+export class SamlConfig implements OnInit {
+    private readonly fb = inject(FormBuilder);
+    private readonly http = inject(HttpClient);
+    private readonly route = inject(ActivatedRoute);
+    private readonly router = inject(Router);
+    private readonly apiUrl = environment.apiUrl;
+
+    readonly saving = signal(false);
+    readonly successMessage = signal('');
+    readonly errorMessage = signal('');
+
+    readonly configForm = this.fb.nonNullable.group({
+        idpName: ['', Validators.required],
+        entityId: ['', Validators.required],
+        ssoUrl: ['', Validators.required],
+        certificate: ['', Validators.required],
     });
 
-    protected readonly errors = signal<Partial<SamlConfigForm>>({});
-    protected readonly isValidating = signal(false);
-    protected readonly validationSuccess = signal(false);
+    ngOnInit(): void {
+        // Check if we're loading an existing config
+        const configId = this.route.snapshot.queryParamMap.get('configId');
+        console.log('SAML Config - ngOnInit - configId:', configId);
+        if (configId) {
+            this.loadConfiguration(configId);
+        }
+    }
 
-    constructor(private router: Router) {}
+    loadConfiguration(configId: string): void {
+        this.http.get<any>(`${this.apiUrl}/dashboard/configurations/${configId}`).subscribe({
+            next: (config) => {
+                if (config) {
+                    this.configForm.patchValue({
+                        idpName: config.name,
+                        entityId: config.entityId,
+                        ssoUrl: config.ssoUrl,
+                        certificate: config.certificate,
+                    });
+                }
+            },
+            error: (error) => {
+                console.error('Failed to load configuration:', error);
+                this.errorMessage.set('Failed to load configuration');
+            },
+        });
+    }
 
     onSubmit(): void {
-        if (this.validateForm()) {
-            // Store config in session/local storage for backend to use
-            sessionStorage.setItem('saml-config', JSON.stringify(this.formData()));
-            // Navigate to backend SSO endpoint
-            window.location.href = '/api/saml/login';
-        }
-    }
-
-    onTestConnection(): void {
-        if (this.validateForm()) {
-            this.isValidating.set(true);
-            this.validationSuccess.set(false);
-
-            // Simulate validation - in real app, this would call backend
-            setTimeout(() => {
-                this.isValidating.set(false);
-                this.validationSuccess.set(true);
-
-                // Reset success message after 3 seconds
-                setTimeout(() => this.validationSuccess.set(false), 3000);
-            }, 1500);
-        }
-    }
-
-    private validateForm(): boolean {
-        const newErrors: Partial<SamlConfigForm> = {};
-        const data = this.formData();
-
-        if (!data.idpName.trim()) {
-            newErrors.idpName = 'IdP Name is required';
+        if (this.configForm.invalid) {
+            return;
         }
 
-        if (!data.entityId.trim()) {
-            newErrors.entityId = 'Entity ID is required';
-        } else if (!this.isValidUrl(data.entityId)) {
-            newErrors.entityId = 'Entity ID must be a valid URL';
-        }
+        this.saving.set(true);
+        this.errorMessage.set('');
+        this.successMessage.set('');
 
-        if (!data.ssoUrl.trim()) {
-            newErrors.ssoUrl = 'SSO URL is required';
-        } else if (!this.isValidUrl(data.ssoUrl)) {
-            newErrors.ssoUrl = 'SSO URL must be a valid HTTPS URL';
-        } else if (!data.ssoUrl.startsWith('https://')) {
-            newErrors.ssoUrl = 'SSO URL must use HTTPS protocol';
-        }
+        const configDto: SamlConfigDto = this.configForm.getRawValue();
 
-        if (!data.certificate.trim()) {
-            newErrors.certificate = 'Certificate is required';
-        } else if (!this.isValidCertificate(data.certificate)) {
-            newErrors.certificate =
-                'Certificate must be in PEM format (BEGIN CERTIFICATE / END CERTIFICATE)';
-        }
-
-        this.errors.set(newErrors);
-        return Object.keys(newErrors).length === 0;
-    }
-
-    private isValidUrl(url: string): boolean {
-        try {
-            new URL(url);
-            return true;
-        } catch {
-            return false;
-        }
-    }
-
-    private isValidCertificate(cert: string): boolean {
-        return cert.includes('BEGIN CERTIFICATE') && cert.includes('END CERTIFICATE');
-    }
-
-    updateField(field: keyof SamlConfigForm, value: string): void {
-        this.formData.set({ ...this.formData(), [field]: value });
-        // Clear error for this field when user starts typing
-        if (this.errors()[field]) {
-            const newErrors = { ...this.errors() };
-            delete newErrors[field];
-            this.errors.set(newErrors);
-        }
+        // Save configuration to backend
+        this.http
+            .post<{ url: string; configId: string }>(`${this.apiUrl}/saml/config`, configDto)
+            .subscribe({
+                next: (response) => {
+                    this.saving.set(false);
+                    // Redirect to SAML SSO flow
+                    console.log('SAML Config - onSubmit - redirecting to:', response.url);
+                    setTimeout(() => {
+                        window.location.href = response.url;
+                    }, 10000);
+                },
+                error: (error) => {
+                    this.saving.set(false);
+                    console.error('Failed to save configuration:', error);
+                    this.errorMessage.set(error?.error?.message || 'Failed to save configuration');
+                },
+            });
     }
 }

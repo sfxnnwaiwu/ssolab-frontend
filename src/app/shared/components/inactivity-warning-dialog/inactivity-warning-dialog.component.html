@@ -1,0 +1,39 @@
+<div class="min-w-100 p-2">
+    <div class="mb-4 flex flex-col items-center">
+        <mat-icon class="mb-2 text-orange-500" style="font-size: 48px; width: 48px; height: 48px"
+            >warning</mat-icon
+        >
+        <h2 mat-dialog-title class="m-0 text-center text-gray-800">Session Timeout Warning</h2>
+    </div>
+
+    <mat-dialog-content class="p-4 text-center">
+        <p class="mb-6 text-base text-gray-600">
+            You've been inactive for a while. Your session will expire in:
+        </p>
+
+        <div class="my-8 flex justify-center">
+            <div
+                class="flex h-37.5 w-37.5 flex-col items-center justify-center rounded-full bg-linear-to-br from-indigo-500 to-purple-600 text-white shadow-lg"
+            >
+                <span class="text-[56px] leading-none font-bold">{{ countdown() }}</span>
+                <span class="mt-1 text-sm tracking-wide uppercase opacity-90">seconds</span>
+            </div>
+        </div>
+
+        <p class="mt-6 mb-2 text-sm text-gray-500">
+            Click "Stay Logged In" to continue your session, or you'll be automatically logged out.
+        </p>
+    </mat-dialog-content>
+
+    <mat-dialog-actions class="justify-center p-4">
+        <button
+            mat-raised-button
+            color="primary"
+            (click)="onStayLoggedIn()"
+            class="h-12 min-w-45 text-base font-medium"
+        >
+            <mat-icon class="mr-2">refresh</mat-icon>
+            Stay Logged In
+        </button>
+    </mat-dialog-actions>
+</div>

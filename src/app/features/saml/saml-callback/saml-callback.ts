@@ -1,6 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import {
+    ErrorAuthResult,
+    isErrorAuthResult,
+    isSamlAuthResult,
+    SamlAuthResult,
+} from '../../../core/models/sso-test.model';
+import { Auth } from '../../../core/services/auth';
 
 interface UserAttribute {
     name: string;
@@ -50,6 +57,10 @@ interface ResponseLog {
     styleUrl: './saml-callback.css',
 })
 export class SamlCallback implements OnInit {
+    private readonly authService = inject(Auth);
+    private readonly route = inject(ActivatedRoute);
+    private readonly router = inject(Router);
+
     protected readonly isLoading = signal(true);
     protected readonly hasError = signal(false);
     protected readonly errorMessage = signal('');
@@ -66,86 +77,194 @@ export class SamlCallback implements OnInit {
     // Expose JSON for template use
     protected readonly JSON = JSON;
 
-    constructor(private router: Router) {}
-
     ngOnInit(): void {
-        // Check URL params for error simulation
         const urlParams = new URLSearchParams(window.location.search);
-        const simulateError = urlParams.get('error');
+        const resultId = urlParams.get('resultId');
+        const success = urlParams.get('success');
 
-        setTimeout(() => {
-            if (simulateError) {
-                this.simulateError(simulateError);
-            } else {
-                this.processSamlResponse();
-            }
-        }, 1000);
+        if (resultId) {
+            // Fetch result from backend using resultId
+            this.fetchAuthResult(resultId);
+        } else if (success) {
+            // Try session-based retrieval
+            this.fetchAuthResultFromSession();
+        } else {
+            // Fallback to mock
+            // this.processSamlResponse();
+        }
+
+        // Fetch authentication result from backend session
+        // this.fetchAuthResult();
+
+        // const urlParams = new URLSearchParams(window.location.search);
+        // const samlResponse = urlParams.get('SAMLResponse');
+        // const relayState = urlParams.get('RelayState');
+        // if (!samlResponse) {
+        //     this.hasError.set(true);
+        //     this.errorMessage.set('No SAML response received from Identity Provider');
+        //     this.isLoading.set(false);
+        //     return;
+        // }
+        // Send to backend for validation
+        // this.validateSamlResponse(samlResponse, relayState);
     }
 
-    private processSamlResponse(): void {
-        try {
-            // Mock SAML response - in real app, this comes from backend API
-            const mockResponse: SamlResponse = {
-                nameId: 'john.doe@example.com',
-                sessionIndex: '_8e8dc5f69a98ac3c9c17b7c3f8a5e8d1',
-                issuer: 'https://idp.example.com/saml',
-                notBefore: new Date(Date.now() - 60000).toISOString(),
-                notOnOrAfter: new Date(Date.now() + 3600000).toISOString(),
-                attributes: {
-                    email: 'john.doe@example.com',
-                    firstName: 'John',
-                    lastName: 'Doe',
-                    displayName: 'John Doe',
-                    department: 'Engineering',
-                    groups: ['Developers', 'Administrators', 'SAML-Users'],
-                    employeeId: 'EMP-12345',
-                    mobile: '+1-555-0123',
-                },
-                rawAssertion: `<?xml version="1.0" encoding="UTF-8"?>
-<saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
-                ID="_8e8dc5f69a98ac3c9c17b7c3f8a5e8d1"
-                IssueInstant="${new Date().toISOString()}"
-                Version="2.0">
-    <saml:Issuer>https://idp.example.com/saml</saml:Issuer>
-    <saml:Subject>
-        <saml:NameID Format="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress">
-            john.doe@example.com
-        </saml:NameID>
-        <saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer">
-            <saml:SubjectConfirmationData
-                NotOnOrAfter="${new Date(Date.now() + 3600000).toISOString()}"
-                Recipient="https://sp.example.com/saml/acs"/>
-        </saml:SubjectConfirmation>
-    </saml:Subject>
-    <saml:Conditions
-        NotBefore="${new Date(Date.now() - 60000).toISOString()}"
-        NotOnOrAfter="${new Date(Date.now() + 3600000).toISOString()}">
-        <saml:AudienceRestriction>
-            <saml:Audience>https://sp.example.com/saml/metadata</saml:Audience>
-        </saml:AudienceRestriction>
-    </saml:Conditions>
-    <saml:AttributeStatement>
-        <saml:Attribute Name="email">
-            <saml:AttributeValue>john.doe@example.com</saml:AttributeValue>
-        </saml:Attribute>
-        <saml:Attribute Name="firstName">
-            <saml:AttributeValue>John</saml:AttributeValue>
-        </saml:Attribute>
-        <saml:Attribute Name="lastName">
-            <saml:AttributeValue>Doe</saml:AttributeValue>
-        </saml:Attribute>
-    </saml:AttributeStatement>
-</saml:Assertion>`,
-            };
+    // private validateSamlResponse(samlResponse: string, relayState: string | null): void {
+    //     this.authService.validateSamlResponse(samlResponse, relayState).subscribe({
+    //         next: (result) => {
+    //             if (isSamlAuthResult(result)) {
+    //                 this.handleSuccessResult(result);
+    //             } else if (isErrorAuthResult(result)) {
+    //                 this.handleErrorResult(result);
+    //             } else {
+    //                 this.hasError.set(true);
+    //                 this.errorMessage.set('Invalid authentication result type');
+    //             }
+    //             this.isLoading.set(false);
+    //         },
+    //         error: (error) => {
+    //             this.hasError.set(true);
+    //             this.errorMessage.set(error?.error?.message || 'Failed to validate SAML response');
+    //             this.isLoading.set(false);
+    //         },
+    //     });
+    // }
 
-            this.samlResponse.set(mockResponse);
-            this.processAttributes(mockResponse.attributes);
-            this.isLoading.set(false);
-        } catch (error) {
+    private fetchAuthResult(resultId: string): void {
+        this.authService.getSessionAuthResult(resultId).subscribe({
+            next: (result) => {
+                if (isSamlAuthResult(result)) {
+                    this.handleSuccessResult(result);
+                } else if (isErrorAuthResult(result)) {
+                    this.handleErrorResult(result);
+                } else {
+                    // Wrong protocol - might be OIDC result instead
+                    this.hasError.set(true);
+                    this.errorMessage.set(
+                        'Invalid authentication result type. Expected SAML result.'
+                    );
+                }
+                this.isLoading.set(false);
+            },
+            error: (error) => {
+                this.hasError.set(true);
+                this.errorMessage.set(
+                    error?.error?.message || 'Failed to retrieve authentication result from session'
+                );
+                this.isLoading.set(false);
+            },
+        });
+    }
+
+    private fetchAuthResultFromSession(): void {
+        this.authService.fetchAuthResultFromSession().subscribe({
+            next: (response: any) => {
+                if (response.success && response.data) {
+                    this.handleAuthResult(response.data);
+                }
+                this.isLoading.set(false);
+            },
+            error: (error) => {
+                this.hasError.set(true);
+                this.errorMessage.set(error?.error?.message || 'No authentication result found');
+                this.isLoading.set(false);
+            },
+        });
+    }
+
+    private handleAuthResult(result: any): void {
+        if (result.success) {
+            // Process successful SAML response
+            this.samlResponse.set({
+                nameId: result.samlResponse.decoded.subject,
+                sessionIndex: result.samlResponse.decoded.sessionIndex,
+                attributes: result.userAttributes,
+                issuer: result.samlResponse.decoded.issuer,
+                notBefore: result.samlResponse.decoded.conditions.notBefore,
+                notOnOrAfter: result.samlResponse.decoded.conditions.notOnOrAfter,
+                rawAssertion: result.samlResponse.raw,
+            });
+
+            this.processAttributes(result.userAttributes);
+        } else {
+            // Handle error
             this.hasError.set(true);
-            this.errorMessage.set('Failed to process SAML response');
-            this.isLoading.set(false);
+            this.errorMessage.set(result.error?.message || 'Authentication failed');
         }
+    }
+
+    private handleSuccessResult(result: SamlAuthResult): void {
+        // Map backend SAML result to component interface
+        const samlResponse: SamlResponse = {
+            nameId: result.samlResponse.decoded.subject,
+            sessionIndex: result.samlResponse.decoded.sessionIndex,
+            issuer: result.samlResponse.decoded.issuer,
+            notBefore: result.samlResponse.decoded.conditions.notBefore,
+            notOnOrAfter: result.samlResponse.decoded.conditions.notOnOrAfter,
+            attributes: result.userAttributes,
+            rawAssertion: result.samlResponse.raw,
+        };
+
+        this.samlResponse.set(samlResponse);
+        this.processAttributes(result.userAttributes);
+
+        // Map request/response logs
+        this.requestLog.set({
+            timestamp: result.requestLog.timestamp,
+            method: result.requestLog.method,
+            url: result.requestLog.url,
+            headers: result.requestLog.headers,
+            body: result.requestLog.body
+                ? JSON.stringify(result.requestLog.body, null, 2)
+                : undefined,
+        });
+
+        this.responseLog.set({
+            timestamp: result.responseLog.timestamp,
+            status: result.responseLog.status,
+            statusText: result.responseLog.statusText,
+            headers: result.responseLog.headers,
+            body: result.responseLog.body
+                ? JSON.stringify(result.responseLog.body, null, 2)
+                : undefined,
+        });
+    }
+
+    private handleErrorResult(result: ErrorAuthResult): void {
+        this.hasError.set(true);
+
+        const errorDetail: ErrorDetail = {
+            code: result.error.type.toUpperCase(),
+            title: result.error.title,
+            message: result.error.description,
+            technicalDetails: result.error.technicalDetails,
+            troubleshootingSteps: result.error.troubleshootingSteps,
+            relatedDocs: result.error.relatedDocs?.map((doc) => doc.title) || [],
+        };
+
+        this.errorDetail.set(errorDetail);
+        this.errorMessage.set(result.error.description);
+
+        // Map request/response logs
+        this.requestLog.set({
+            timestamp: result.requestLog.timestamp,
+            method: result.requestLog.method,
+            url: result.requestLog.url,
+            headers: result.requestLog.headers,
+            body: result.requestLog.body
+                ? JSON.stringify(result.requestLog.body, null, 2)
+                : undefined,
+        });
+
+        this.responseLog.set({
+            timestamp: result.responseLog.timestamp,
+            status: result.responseLog.status,
+            statusText: result.responseLog.statusText,
+            headers: result.responseLog.headers,
+            body: result.responseLog.body
+                ? JSON.stringify(result.responseLog.body, null, 2)
+                : undefined,
+        });
     }
 
     private processAttributes(attrs: Record<string, string | string[]>): void {
@@ -172,6 +291,12 @@ export class SamlCallback implements OnInit {
             groups: 'Group memberships',
             employeeId: 'Employee identifier',
             mobile: 'Mobile phone number',
+            uid: 'User identifier',
+            cn: 'Common name',
+            sn: 'Surname',
+            givenName: 'Given name',
+            role: 'User role',
+            title: 'Job title',
         };
         return descriptions[attrName] || 'Custom attribute';
     }
@@ -194,13 +319,26 @@ export class SamlCallback implements OnInit {
     }
 
     testAnotherProtocol(): void {
-        this.router.navigate(['/']);
+        // Clear session and navigate to home
+        this.clearSessionAndNavigate('/');
     }
 
     logout(): void {
-        // Clear session storage
-        sessionStorage.removeItem('saml-config');
-        this.router.navigate(['/']);
+        // Clear session and navigate to home
+        this.clearSessionAndNavigate('/');
+    }
+
+    private clearSessionAndNavigate(path: string): void {
+        this.authService.clearSession().subscribe({
+            next: () => {
+                this.router.navigate([path]);
+            },
+            error: (err) => {
+                console.error('Failed to clear session:', err);
+                // Navigate anyway
+                this.router.navigate([path]);
+            },
+        });
     }
 
     formatValue(value: string | string[]): string {
@@ -220,162 +358,5 @@ export class SamlCallback implements OnInit {
 
     stringifyJson(obj: any): string {
         return JSON.stringify(obj, null, 2);
-    }
-
-    private simulateError(errorType: string): void {
-        this.isLoading.set(false);
-        this.hasError.set(true);
-
-        // Create mock request/response logs
-        this.requestLog.set({
-            timestamp: new Date().toISOString(),
-            method: 'POST',
-            url: 'https://sp.example.com/saml/acs',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': 'Mozilla/5.0',
-            },
-            body: 'SAMLResponse=PHNhbWw6QXNzZXJ0aW9uPi4uLjwvc2FtbDpBc3NlcnRpb24%2B&RelayState=...',
-        });
-
-        this.responseLog.set({
-            timestamp: new Date().toISOString(),
-            status: 401,
-            statusText: 'Unauthorized',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(
-                { error: errorType, details: 'SAML assertion validation failed' },
-                null,
-                2
-            ),
-        });
-
-        let errorDetail: ErrorDetail;
-
-        switch (errorType) {
-            case 'invalid_signature':
-                errorDetail = {
-                    code: 'SAML_INVALID_SIGNATURE',
-                    title: 'Invalid SAML Assertion Signature',
-                    message:
-                        'The SAML assertion signature could not be verified against the IdP certificate.',
-                    technicalDetails:
-                        'Signature validation failed: The digest value in the signature does not match the calculated digest of the assertion.',
-                    troubleshootingSteps: [
-                        'Verify that the correct IdP certificate is configured in your Service Provider',
-                        'Ensure the certificate has not expired',
-                        'Check that the certificate format is correct (PEM format with proper headers)',
-                        'Verify that the IdP is using the correct signing algorithm (SHA-256 is recommended)',
-                        'Confirm there are no whitespace or encoding issues in the certificate',
-                    ],
-                    relatedDocs: [
-                        'SAML 2.0 Signature Specification',
-                        'IdP Certificate Configuration Guide',
-                    ],
-                };
-                break;
-
-            case 'expired_assertion':
-                errorDetail = {
-                    code: 'SAML_ASSERTION_EXPIRED',
-                    title: 'SAML Assertion Expired',
-                    message: 'The SAML assertion has expired and is no longer valid.',
-                    technicalDetails: `Assertion NotOnOrAfter time has passed. Current time: ${new Date().toISOString()}`,
-                    troubleshootingSteps: [
-                        'Check the clock synchronization between IdP and SP servers (use NTP)',
-                        'Verify the assertion validity period configured in your IdP',
-                        'Increase the assertion lifetime if the network latency is high',
-                        'Check for timezone misconfigurations',
-                        'Ensure there is no significant clock skew (should be < 5 minutes)',
-                    ],
-                    relatedDocs: [
-                        'SAML Time Synchronization Best Practices',
-                        'Clock Skew Configuration',
-                    ],
-                };
-                break;
-
-            case 'invalid_audience':
-                errorDetail = {
-                    code: 'SAML_INVALID_AUDIENCE',
-                    title: 'Invalid Audience Restriction',
-                    message:
-                        'The SAML assertion audience does not match the expected SP entity ID.',
-                    technicalDetails:
-                        'Expected audience: https://sp.example.com/metadata, Received: https://wrong-sp.example.com/metadata',
-                    troubleshootingSteps: [
-                        'Verify the Entity ID configured in your Service Provider matches the IdP configuration',
-                        'Check the SP metadata file for the correct entityID attribute',
-                        'Update the IdP configuration to use the correct SP entity ID',
-                        'Ensure the audience restriction in the IdP assertion configuration matches your SP',
-                        'Re-upload SP metadata to the IdP if recently changed',
-                    ],
-                    relatedDocs: ['SAML Entity ID Configuration', 'SP Metadata Format'],
-                };
-                break;
-
-            case 'missing_attributes':
-                errorDetail = {
-                    code: 'SAML_MISSING_REQUIRED_ATTRIBUTES',
-                    title: 'Required Attributes Missing',
-                    message: 'The SAML assertion is missing required user attributes.',
-                    technicalDetails: 'Required attributes not found: [email, firstName, lastName]',
-                    troubleshootingSteps: [
-                        'Check the attribute mapping configuration in your IdP',
-                        'Verify that the user profile in the IdP contains the required attributes',
-                        'Review the IdP attribute release policy for your SP',
-                        'Confirm the attribute names match exactly (case-sensitive)',
-                        'Check the SAML assertion to see which attributes are being sent',
-                    ],
-                    relatedDocs: [
-                        'SAML Attribute Mapping Guide',
-                        'IdP Attribute Release Configuration',
-                    ],
-                };
-                break;
-
-            case 'certificate_mismatch':
-                errorDetail = {
-                    code: 'SAML_CERTIFICATE_MISMATCH',
-                    title: 'Certificate Mismatch',
-                    message:
-                        'The signing certificate in the assertion does not match the configured IdP certificate.',
-                    technicalDetails:
-                        'Certificate fingerprint mismatch. Expected: A1:B2:C3..., Received: D4:E5:F6...',
-                    troubleshootingSteps: [
-                        'Verify you have the latest IdP certificate installed',
-                        'Check if the IdP has recently rotated their signing certificates',
-                        'Download and install the updated certificate from the IdP',
-                        'Confirm the certificate chain is complete',
-                        "Check for certificate format issues (ensure it's X.509 PEM format)",
-                    ],
-                    relatedDocs: [
-                        'Certificate Management Best Practices',
-                        'IdP Certificate Rotation',
-                    ],
-                };
-                break;
-
-            default:
-                errorDetail = {
-                    code: 'SAML_UNKNOWN_ERROR',
-                    title: 'SAML Authentication Failed',
-                    message: 'An unexpected error occurred during SAML authentication.',
-                    technicalDetails: 'Error details not available',
-                    troubleshootingSteps: [
-                        'Check the browser console for JavaScript errors',
-                        'Review the backend logs for detailed error information',
-                        'Verify the IdP is accessible and responding',
-                        'Check network connectivity between SP and IdP',
-                        'Ensure CORS is properly configured if using browser-based flows',
-                    ],
-                    relatedDocs: ['SAML Troubleshooting Guide', 'Common SAML Errors'],
-                };
-        }
-
-        this.errorDetail.set(errorDetail);
-        this.errorMessage.set(errorDetail.message);
     }
 }

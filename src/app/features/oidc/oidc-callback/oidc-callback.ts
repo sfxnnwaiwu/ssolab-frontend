@@ -1,6 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import {
+    ErrorAuthResult,
+    isErrorAuthResult,
+    isOidcAuthResult,
+    OidcAuthResult,
+} from '../../../core/models/sso-test.model';
+import { Auth } from '../../../core/services/auth';
 
 interface TokenClaim {
     name: string;
@@ -50,6 +57,10 @@ interface ResponseLog {
     styleUrl: './oidc-callback.css',
 })
 export class OidcCallback implements OnInit {
+    private readonly authService = inject(Auth);
+    private readonly route = inject(ActivatedRoute);
+    private readonly router = inject(Router);
+
     protected readonly isLoading = signal(true);
     protected readonly hasError = signal(false);
     protected readonly errorMessage = signal('');
@@ -67,66 +78,124 @@ export class OidcCallback implements OnInit {
     // Expose JSON for template use
     protected readonly JSON = JSON;
 
-    constructor(private router: Router) {}
-
     ngOnInit(): void {
-        // Check URL params for error simulation
-        const urlParams = new URLSearchParams(window.location.search);
-        const simulateError = urlParams.get('error');
+        // Fetch authentication result from backend session
+        // this.fetchAuthResult();
 
-        setTimeout(() => {
-            if (simulateError) {
-                this.simulateError(simulateError);
-            } else {
-                this.processOidcTokens();
-            }
-        }, 1000);
+        const urlParams = new URLSearchParams(window.location.search);
+        const resultId = urlParams.get('resultId');
+        const success = urlParams.get('success');
+
+        if (resultId) {
+            // Fetch result from backend using resultId
+            this.fetchAuthResult(resultId);
+        } else if (success) {
+            // Try session-based retrieval
+            // this.fetchAuthResultFromSession();
+        } else {
+            // Fallback to mock
+            // this.processSamlResponse();
+        }
     }
 
-    private processOidcTokens(): void {
-        try {
-            const now = Math.floor(Date.now() / 1000);
+    private fetchAuthResult(resultId: string): void {
+        this.authService.getSessionAuthResult(resultId).subscribe({
+            next: (result) => {
+                if (isOidcAuthResult(result)) {
+                    this.handleSuccessResult(result);
+                } else if (isErrorAuthResult(result)) {
+                    this.handleErrorResult(result);
+                } else {
+                    // Wrong protocol - might be SAML result instead
+                    this.hasError.set(true);
+                    this.errorMessage.set(
+                        'Invalid authentication result type. Expected OIDC result.'
+                    );
+                }
+                this.isLoading.set(false);
+            },
+            error: (error) => {
+                this.hasError.set(true);
+                this.errorMessage.set(
+                    error?.error?.message || 'Failed to retrieve authentication result from session'
+                );
+                this.isLoading.set(false);
+            },
+        });
+    }
 
-            // Mock decoded ID token
-            const decodedIdToken = {
-                iss: 'https://idp.example.com',
-                sub: '248289761001',
-                aud: 'your-client-id',
-                exp: now + 3600,
-                iat: now,
-                auth_time: now,
-                nonce: 'n-0S6_WzA2Mj',
-                email: 'jane.smith@example.com',
-                email_verified: true,
-                name: 'Jane Smith',
-                given_name: 'Jane',
-                family_name: 'Smith',
-                preferred_username: 'jane.smith',
-                picture: 'https://example.com/avatar.jpg',
-                locale: 'en-US',
-                roles: ['user', 'admin'],
-            };
+    private handleSuccessResult(result: OidcAuthResult): void {
+        // Map backend OIDC result to component interface
+        const oidcTokens: OidcTokens = {
+            idToken: result.tokens.idToken.raw,
+            accessToken: result.tokens.accessToken.raw,
+            refreshToken: result.tokens.refreshToken?.raw,
+            decodedIdToken: result.tokens.idToken.decoded.payload,
+            decodedAccessToken: result.tokens.accessToken.decoded,
+            expiresIn: result.tokens.expiresIn,
+            tokenType: result.tokens.tokenType,
+        };
 
-            // Mock tokens
-            const mockTokens: OidcTokens = {
-                idToken:
-                    'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjEyMzQ1In0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbSIsInN1YiI6IjI0ODI4OTc2MTAwMSIsImF1ZCI6InlvdXItY2xpZW50LWlkIiwiZXhwIjoxNzA2NzMwMDAwLCJpYXQiOjE3MDY3MjY0MDAsImF1dGhfdGltZSI6MTcwNjcyNjQwMCwibm9uY2UiOiJuLTBTNl9XekEyTWoiLCJlbWFpbCI6ImphbmUuc21pdGhAZXhhbXBsZS5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmFtZSI6IkphbmUgU21pdGgiLCJnaXZlbl9uYW1lIjoiSmFuZSIsImZhbWlseV9uYW1lIjoiU21pdGgiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJqYW5lLnNtaXRoIiwicGljdHVyZSI6Imh0dHBzOi8vZXhhbXBsZS5jb20vYXZhdGFyLmpwZyIsImxvY2FsZSI6ImVuLVVTIiwicm9sZXMiOlsidXNlciIsImFkbWluIl19.dGhpcyBpcyBhIG1vY2sgc2lnbmF0dXJlIGZvciB0ZXN0aW5nIHB1cnBvc2VzIG9ubHk',
-                accessToken:
-                    'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbSIsInN1YiI6IjI0ODI4OTc2MTAwMSIsImF1ZCI6ImFwaS5leGFtcGxlLmNvbSIsImV4cCI6MTcwNjczMDAwMCwiaWF0IjoxNzA2NzI2NDAwLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIn0.YW5vdGhlciBtb2NrIHNpZ25hdHVyZSBmb3IgYWNjZXNzIHRva2VuIHRlc3Rpbmc',
-                refreshToken: 'refresh_token_mock_value_1234567890',
-                decodedIdToken,
-                expiresIn: 3600,
-                tokenType: 'Bearer',
-            };
+        this.tokens.set(oidcTokens);
+        this.processClaims(result.userClaims);
 
-            this.tokens.set(mockTokens);
-            this.processClaims(decodedIdToken);
-            this.isLoading.set(false);
-        } catch (error) {
-            this.hasError.set(true);
-            this.errorMessage.set('Failed to process OIDC tokens');
-            this.isLoading.set(false);
-        }
+        // Map request/response logs
+        this.requestLog.set({
+            timestamp: result.requestLog.timestamp,
+            method: result.requestLog.method,
+            url: result.requestLog.url,
+            headers: result.requestLog.headers,
+            body: result.requestLog.body
+                ? JSON.stringify(result.requestLog.body, null, 2)
+                : undefined,
+        });
+
+        this.responseLog.set({
+            timestamp: result.responseLog.timestamp,
+            status: result.responseLog.status,
+            statusText: result.responseLog.statusText,
+            headers: result.responseLog.headers,
+            body: result.responseLog.body
+                ? JSON.stringify(result.responseLog.body, null, 2)
+                : undefined,
+        });
+    }
+
+    private handleErrorResult(result: ErrorAuthResult): void {
+        this.hasError.set(true);
+
+        const errorDetail: ErrorDetail = {
+            code: result.error.type.toUpperCase(),
+            title: result.error.title,
+            message: result.error.description,
+            technicalDetails: result.error.technicalDetails,
+            troubleshootingSteps: result.error.troubleshootingSteps,
+            relatedDocs: result.error.relatedDocs?.map((doc) => doc.title) || [],
+        };
+
+        this.errorDetail.set(errorDetail);
+        this.errorMessage.set(result.error.description);
+
+        // Map request/response logs
+        this.requestLog.set({
+            timestamp: result.requestLog.timestamp,
+            method: result.requestLog.method,
+            url: result.requestLog.url,
+            headers: result.requestLog.headers,
+            body: result.requestLog.body
+                ? JSON.stringify(result.requestLog.body, null, 2)
+                : undefined,
+        });
+
+        this.responseLog.set({
+            timestamp: result.responseLog.timestamp,
+            status: result.responseLog.status,
+            statusText: result.responseLog.statusText,
+            headers: result.responseLog.headers,
+            body: result.responseLog.body
+                ? JSON.stringify(result.responseLog.body, null, 2)
+                : undefined,
+        });
     }
 
     private processClaims(claims: Record<string, any>): void {
@@ -200,13 +269,26 @@ export class OidcCallback implements OnInit {
     }
 
     testAnotherProtocol(): void {
-        this.router.navigate(['/']);
+        // Clear session and navigate to home
+        this.clearSessionAndNavigate('/');
     }
 
     logout(): void {
-        // Clear session storage
-        sessionStorage.removeItem('oidc-config');
-        this.router.navigate(['/']);
+        // Clear session and navigate to home
+        this.clearSessionAndNavigate('/');
+    }
+
+    private clearSessionAndNavigate(path: string): void {
+        this.authService.clearSession().subscribe({
+            next: () => {
+                this.router.navigate([path]);
+            },
+            error: (err) => {
+                console.error('Failed to clear session:', err);
+                // Navigate anyway
+                this.router.navigate([path]);
+            },
+        });
     }
 
     formatClaimValue(value: any): string {
@@ -240,168 +322,5 @@ export class OidcCallback implements OnInit {
 
     stringifyJson(obj: any): string {
         return JSON.stringify(obj, null, 2);
-    }
-
-    private simulateError(errorType: string): void {
-        this.isLoading.set(false);
-        this.hasError.set(true);
-
-        // Create mock request/response logs
-        this.requestLog.set({
-            timestamp: new Date().toISOString(),
-            method: 'POST',
-            url: 'https://idp.example.com/oauth/token',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                Authorization: 'Basic Y2xpZW50OnNlY3JldA==',
-            },
-            body: 'grant_type=authorization_code&code=AUTH_CODE_HERE&redirect_uri=https://sp.example.com/callback&code_verifier=PKCE_VERIFIER',
-        });
-
-        this.responseLog.set({
-            timestamp: new Date().toISOString(),
-            status: 400,
-            statusText: 'Bad Request',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(
-                { error: errorType, error_description: 'Token exchange failed' },
-                null,
-                2
-            ),
-        });
-
-        let errorDetail: ErrorDetail;
-
-        switch (errorType) {
-            case 'invalid_client':
-                errorDetail = {
-                    code: 'OIDC_INVALID_CLIENT',
-                    title: 'Invalid Client Credentials',
-                    message: 'The client ID or client secret is incorrect.',
-                    technicalDetails:
-                        'Authentication failed: Client credentials do not match any registered application.',
-                    troubleshootingSteps: [
-                        'Verify the Client ID matches exactly what was registered with the IdP',
-                        'Check that the Client Secret is correct (it may have been rotated)',
-                        'Ensure there are no extra spaces or hidden characters in credentials',
-                        'Confirm the client is registered and active in the IdP',
-                        'Check if the client credentials are environment-specific (dev/staging/prod)',
-                    ],
-                    relatedDocs: ['OIDC Client Registration', 'Client Credential Management'],
-                };
-                break;
-
-            case 'invalid_grant':
-                errorDetail = {
-                    code: 'OIDC_INVALID_GRANT',
-                    title: 'Invalid Authorization Grant',
-                    message:
-                        'The authorization code is invalid, expired, or has already been used.',
-                    technicalDetails:
-                        'The authorization code cannot be exchanged for tokens. It may have expired or already been redeemed.',
-                    troubleshootingSteps: [
-                        'Authorization codes are single-use only - check if it was already exchanged',
-                        'Verify the code has not expired (typically valid for 60-120 seconds)',
-                        'Ensure the redirect_uri matches exactly what was used in the authorization request',
-                        'Check for clock synchronization issues between client and server',
-                        'Verify the code was not intercepted or modified in transit',
-                    ],
-                    relatedDocs: ['Authorization Code Flow', 'OIDC Security Best Practices'],
-                };
-                break;
-
-            case 'invalid_token':
-                errorDetail = {
-                    code: 'OIDC_INVALID_TOKEN',
-                    title: 'Invalid or Malformed Token',
-                    message: 'The ID token or access token is invalid or cannot be verified.',
-                    technicalDetails:
-                        'Token signature verification failed or token format is invalid.',
-                    troubleshootingSteps: [
-                        "Verify the token signature using the IdP's public keys (JWKS endpoint)",
-                        'Check that the token has not been modified in transit',
-                        'Ensure the token has not expired (check "exp" claim)',
-                        'Verify the "iss" (issuer) claim matches your IdP',
-                        'Confirm the "aud" (audience) claim matches your client ID',
-                    ],
-                    relatedDocs: ['JWT Validation', 'JWKS Endpoint Configuration'],
-                };
-                break;
-
-            case 'unauthorized_client':
-                errorDetail = {
-                    code: 'OIDC_UNAUTHORIZED_CLIENT',
-                    title: 'Client Not Authorized',
-                    message: 'The client is not authorized to use this grant type or scope.',
-                    technicalDetails:
-                        'The requested grant type or scopes are not allowed for this client configuration.',
-                    troubleshootingSteps: [
-                        'Check the allowed grant types in your IdP client configuration',
-                        'Verify the Authorization Code flow is enabled for your client',
-                        'Review the requested scopes - ensure they are granted to your client',
-                        'Check if the client requires consent for the requested scopes',
-                        'Verify the redirect URI is registered for this client',
-                    ],
-                    relatedDocs: ['OIDC Client Configuration', 'OAuth 2.0 Grant Types'],
-                };
-                break;
-
-            case 'access_denied':
-                errorDetail = {
-                    code: 'OIDC_ACCESS_DENIED',
-                    title: 'Access Denied',
-                    message: 'The user or authorization server denied the authentication request.',
-                    technicalDetails:
-                        'User denied consent or authorization server rejected the request based on policy.',
-                    troubleshootingSteps: [
-                        'Check if the user cancelled the authentication flow',
-                        'Verify the user has permission to access the application',
-                        'Review consent screen settings - ensure required scopes are explained',
-                        'Check for conditional access policies that may block the request',
-                        'Verify the user account is active and not locked',
-                    ],
-                    relatedDocs: ['User Consent Configuration', 'Conditional Access Policies'],
-                };
-                break;
-
-            case 'invalid_scope':
-                errorDetail = {
-                    code: 'OIDC_INVALID_SCOPE',
-                    title: 'Invalid Scope Requested',
-                    message: 'One or more requested scopes are invalid or not available.',
-                    technicalDetails:
-                        'The authorization server does not support the requested scopes or they are not configured for this client.',
-                    troubleshootingSteps: [
-                        'Review the scopes requested in your configuration',
-                        'Ensure "openid" scope is included (required for OIDC)',
-                        'Check that custom scopes are defined in the IdP',
-                        'Verify scope names match exactly (case-sensitive)',
-                        'Confirm the client has permission to request these scopes',
-                    ],
-                    relatedDocs: ['OIDC Scopes', 'Custom Scope Configuration'],
-                };
-                break;
-
-            default:
-                errorDetail = {
-                    code: 'OIDC_UNKNOWN_ERROR',
-                    title: 'OIDC Authentication Failed',
-                    message: 'An unexpected error occurred during OIDC authentication.',
-                    technicalDetails: 'Error details not available',
-                    troubleshootingSteps: [
-                        'Check the browser console for detailed error messages',
-                        'Review backend logs for token exchange errors',
-                        'Verify the OIDC discovery endpoint is accessible',
-                        'Check network connectivity to the IdP',
-                        'Ensure the IdP service is operational',
-                    ],
-                    relatedDocs: ['OIDC Troubleshooting Guide', 'Common OIDC Errors'],
-                };
-        }
-
-        this.errorDetail.set(errorDetail);
-        this.errorMessage.set(errorDetail.message);
     }
 }

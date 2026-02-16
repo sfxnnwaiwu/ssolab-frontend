@@ -1,0 +1,79 @@
+<div
+    class="flex min-h-screen items-center justify-center bg-linear-to-br from-indigo-500 to-purple-600 p-8"
+>
+    <div class="w-full max-w-md rounded-xl bg-white p-12 shadow-2xl">
+        <h1 class="mb-2 text-3xl font-bold text-gray-800">Sign In</h1>
+        <p class="mb-8 text-gray-600">Access your SSO testing dashboard</p>
+
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+            @if (errorMessage()) {
+                <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+                    {{ errorMessage() }}
+                </div>
+            }
+
+            <div class="mb-6">
+                <label for="email" class="mb-2 block font-medium text-gray-700">Email</label>
+                <input
+                    type="email"
+                    id="email"
+                    formControlName="email"
+                    placeholder="Enter your email"
+                    class="w-full rounded-lg border border-gray-300 px-4 py-3 transition focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    [class.border-red-500]="
+                        loginForm.get('email')?.invalid && loginForm.get('email')?.touched
+                    "
+                />
+                @if (
+                    loginForm.get('email')?.hasError('required') && loginForm.get('email')?.touched
+                ) {
+                    <span class="mt-1 block text-sm text-red-500">Email is required</span>
+                }
+                @if (loginForm.get('email')?.hasError('email') && loginForm.get('email')?.touched) {
+                    <span class="mt-1 block text-sm text-red-500">Please enter a valid email</span>
+                }
+            </div>
+
+            <div class="mb-6">
+                <label for="password" class="mb-2 block font-medium text-gray-700">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    formControlName="password"
+                    placeholder="Enter your password"
+                    class="w-full rounded-lg border border-gray-300 px-4 py-3 transition focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    [class.border-red-500]="
+                        loginForm.get('password')?.invalid && loginForm.get('password')?.touched
+                    "
+                />
+                @if (
+                    loginForm.get('password')?.hasError('required') &&
+                    loginForm.get('password')?.touched
+                ) {
+                    <span class="mt-1 block text-sm text-red-500">Password is required</span>
+                }
+            </div>
+
+            <button
+                type="submit"
+                class="w-full rounded-lg bg-linear-to-r from-indigo-500 to-purple-600 py-3.5 font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
+                [disabled]="loginForm.invalid || loading()"
+            >
+                @if (loading()) {
+                    <span>Signing in...</span>
+                } @else {
+                    <span>Sign In</span>
+                }
+            </button>
+        </form>
+
+        <div class="mt-8 border-t border-gray-200 pt-8 text-center">
+            <p class="text-gray-600">
+                Don't have an account?
+                <a routerLink="/signup" class="ml-1 font-semibold text-indigo-600 hover:underline"
+                    >Sign up</a
+                >
+            </p>
+        </div>
+    </div>
+</div>
