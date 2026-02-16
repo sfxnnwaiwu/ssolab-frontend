@@ -13,4 +13,7 @@ npm-debug.log
 .DS_Store
 coverage
 .editorconfig
-.browserslistrc
+.browserslistrcpnpm-debug.log
+*.log
+.npmrc
+.gitattributes
