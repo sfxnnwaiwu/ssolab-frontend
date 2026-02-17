@@ -74,7 +74,6 @@ export class SamlCallback implements OnInit {
     protected requestLog = signal<RequestLog | null>(null);
     protected responseLog = signal<ResponseLog | null>(null);
 
-    // Expose JSON for template use
     protected readonly JSON = JSON;
 
     ngOnInit(): void {
@@ -83,52 +82,14 @@ export class SamlCallback implements OnInit {
         const success = urlParams.get('success');
 
         if (resultId) {
-            // Fetch result from backend using resultId
             this.fetchAuthResult(resultId);
         } else if (success) {
-            // Try session-based retrieval
             this.fetchAuthResultFromSession();
         } else {
             // Fallback to mock
             // this.processSamlResponse();
         }
-
-        // Fetch authentication result from backend session
-        // this.fetchAuthResult();
-
-        // const urlParams = new URLSearchParams(window.location.search);
-        // const samlResponse = urlParams.get('SAMLResponse');
-        // const relayState = urlParams.get('RelayState');
-        // if (!samlResponse) {
-        //     this.hasError.set(true);
-        //     this.errorMessage.set('No SAML response received from Identity Provider');
-        //     this.isLoading.set(false);
-        //     return;
-        // }
-        // Send to backend for validation
-        // this.validateSamlResponse(samlResponse, relayState);
     }
-
-    // private validateSamlResponse(samlResponse: string, relayState: string | null): void {
-    //     this.authService.validateSamlResponse(samlResponse, relayState).subscribe({
-    //         next: (result) => {
-    //             if (isSamlAuthResult(result)) {
-    //                 this.handleSuccessResult(result);
-    //             } else if (isErrorAuthResult(result)) {
-    //                 this.handleErrorResult(result);
-    //             } else {
-    //                 this.hasError.set(true);
-    //                 this.errorMessage.set('Invalid authentication result type');
-    //             }
-    //             this.isLoading.set(false);
-    //         },
-    //         error: (error) => {
-    //             this.hasError.set(true);
-    //             this.errorMessage.set(error?.error?.message || 'Failed to validate SAML response');
-    //             this.isLoading.set(false);
-    //         },
-    //     });
-    // }
 
     private fetchAuthResult(resultId: string): void {
         this.authService.getSessionAuthResult(resultId).subscribe({
@@ -138,7 +99,6 @@ export class SamlCallback implements OnInit {
                 } else if (isErrorAuthResult(result)) {
                     this.handleErrorResult(result);
                 } else {
-                    // Wrong protocol - might be OIDC result instead
                     this.hasError.set(true);
                     this.errorMessage.set(
                         'Invalid authentication result type. Expected SAML result.'
@@ -174,7 +134,6 @@ export class SamlCallback implements OnInit {
 
     private handleAuthResult(result: any): void {
         if (result.success) {
-            // Process successful SAML response
             this.samlResponse.set({
                 nameId: result.samlResponse.decoded.subject,
                 sessionIndex: result.samlResponse.decoded.sessionIndex,
@@ -187,14 +146,12 @@ export class SamlCallback implements OnInit {
 
             this.processAttributes(result.userAttributes);
         } else {
-            // Handle error
             this.hasError.set(true);
             this.errorMessage.set(result.error?.message || 'Authentication failed');
         }
     }
 
     private handleSuccessResult(result: SamlAuthResult): void {
-        // Map backend SAML result to component interface
         const samlResponse: SamlResponse = {
             nameId: result.samlResponse.decoded.subject,
             sessionIndex: result.samlResponse.decoded.sessionIndex,
@@ -208,7 +165,6 @@ export class SamlCallback implements OnInit {
         this.samlResponse.set(samlResponse);
         this.processAttributes(result.userAttributes);
 
-        // Map request/response logs
         this.requestLog.set({
             timestamp: result.requestLog.timestamp,
             method: result.requestLog.method,
@@ -245,7 +201,6 @@ export class SamlCallback implements OnInit {
         this.errorDetail.set(errorDetail);
         this.errorMessage.set(result.error.description);
 
-        // Map request/response logs
         this.requestLog.set({
             timestamp: result.requestLog.timestamp,
             method: result.requestLog.method,
@@ -319,12 +274,10 @@ export class SamlCallback implements OnInit {
     }
 
     testAnotherProtocol(): void {
-        // Clear session and navigate to home
         this.clearSessionAndNavigate('/');
     }
 
     logout(): void {
-        // Clear session and navigate to home
         this.clearSessionAndNavigate('/');
     }
 
@@ -335,7 +288,6 @@ export class SamlCallback implements OnInit {
             },
             error: (err) => {
                 console.error('Failed to clear session:', err);
-                // Navigate anyway
                 this.router.navigate([path]);
             },
         });

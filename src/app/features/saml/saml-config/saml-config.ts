@@ -38,9 +38,7 @@ export class SamlConfig implements OnInit {
     });
 
     ngOnInit(): void {
-        // Check if we're loading an existing config
         const configId = this.route.snapshot.queryParamMap.get('configId');
-        console.log('SAML Config - ngOnInit - configId:', configId);
         if (configId) {
             this.loadConfiguration(configId);
         }
@@ -76,17 +74,13 @@ export class SamlConfig implements OnInit {
 
         const configDto: SamlConfigDto = this.configForm.getRawValue();
 
-        // Save configuration to backend
         this.http
             .post<{ url: string; configId: string }>(`${this.apiUrl}/saml/config`, configDto)
             .subscribe({
                 next: (response) => {
                     this.saving.set(false);
                     // Redirect to SAML SSO flow
-                    console.log('SAML Config - onSubmit - redirecting to:', response.url);
-                    setTimeout(() => {
-                        window.location.href = response.url;
-                    }, 10000);
+                    window.location.href = response.url;
                 },
                 error: (error) => {
                     this.saving.set(false);
