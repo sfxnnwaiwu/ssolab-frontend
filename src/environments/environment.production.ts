@@ -1,5 +1,5 @@
 export const environment = {
     production: true,
-    apiUrl: '/api', // Uses relative path in production (served from same origin)
+    apiUrl: 'https://ssolab-backend.onrender.com/api',
     frontendUrl: window.location.origin,
 };
