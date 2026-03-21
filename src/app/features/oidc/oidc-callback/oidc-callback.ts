@@ -74,6 +74,8 @@ export class OidcCallback implements OnInit {
     protected claims = signal<TokenClaim[]>([]);
     protected requestLog = signal<RequestLog | null>(null);
     protected responseLog = signal<ResponseLog | null>(null);
+    protected configId = signal<string | null>(null);
+    protected idToken = signal<string | null>(null);
 
     // Expose JSON for template use
     protected readonly JSON = JSON;
@@ -83,8 +85,16 @@ export class OidcCallback implements OnInit {
         // this.fetchAuthResult();
 
         const urlParams = new URLSearchParams(window.location.search);
+        const loggedOut = urlParams.get('loggedOut');
         const resultId = urlParams.get('resultId');
         const success = urlParams.get('success');
+
+        // Handle post-logout landing from IdP
+        if (loggedOut === 'true') {
+            this.isLoading.set(false);
+            this.router.navigate(['/oidc/logout-success']);
+            return;
+        }
 
         if (resultId) {
             // Fetch result from backend using resultId
@@ -137,6 +147,15 @@ export class OidcCallback implements OnInit {
         };
 
         this.tokens.set(oidcTokens);
+        this.idToken.set(result.tokens.idToken.raw);
+
+        // Extract configId from URL query params or session
+        const urlParams = new URLSearchParams(window.location.search);
+        const configIdFromUrl = urlParams.get('configId');
+        if (configIdFromUrl) {
+            this.configId.set(configIdFromUrl);
+        }
+
         this.processClaims(result.userClaims);
 
         // Map request/response logs
@@ -274,8 +293,17 @@ export class OidcCallback implements OnInit {
     }
 
     logout(): void {
-        // Clear session and navigate to home
-        this.clearSessionAndNavigate('/');
+        // If we have idToken and configId, perform OIDC logout (IdP SLO)
+        const idToken = this.idToken();
+        const configId = this.configId();
+
+        if (idToken && configId) {
+            // Perform OIDC logout with IdP
+            this.authService.oidcLogout(idToken, configId);
+        } else {
+            // Fallback to local logout
+            this.clearSessionAndNavigate('/');
+        }
     }
 
     private clearSessionAndNavigate(path: string): void {

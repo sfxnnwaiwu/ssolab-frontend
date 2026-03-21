@@ -73,13 +73,22 @@ export class SamlCallback implements OnInit {
     protected userAttributes = signal<UserAttribute[]>([]);
     protected requestLog = signal<RequestLog | null>(null);
     protected responseLog = signal<ResponseLog | null>(null);
+    protected configId = signal<string | null>(null);
 
     protected readonly JSON = JSON;
 
     ngOnInit(): void {
         const urlParams = new URLSearchParams(window.location.search);
+        const loggedOut = urlParams.get('loggedOut');
         const resultId = urlParams.get('resultId');
         const success = urlParams.get('success');
+
+        // Handle post-logout landing from IdP
+        if (loggedOut === 'true') {
+            this.isLoading.set(false);
+            this.router.navigate(['/saml/logout-success']);
+            return;
+        }
 
         if (resultId) {
             this.fetchAuthResult(resultId);
@@ -164,6 +173,13 @@ export class SamlCallback implements OnInit {
 
         this.samlResponse.set(samlResponse);
         this.processAttributes(result.userAttributes);
+
+        // Extract configId from URL query params or session
+        const urlParams = new URLSearchParams(window.location.search);
+        const configIdFromUrl = urlParams.get('configId');
+        if (configIdFromUrl) {
+            this.configId.set(configIdFromUrl);
+        }
 
         this.requestLog.set({
             timestamp: result.requestLog.timestamp,
@@ -278,7 +294,9 @@ export class SamlCallback implements OnInit {
     }
 
     logout(): void {
-        this.clearSessionAndNavigate('/');
+        // If SAML logout session data is stored, perform SAML SLO
+        // The logout session data is stored server-side in Redis after successful authentication
+        this.authService.samlLogout();
     }
 
     private clearSessionAndNavigate(path: string): void {

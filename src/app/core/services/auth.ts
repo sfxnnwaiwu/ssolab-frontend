@@ -5,7 +5,7 @@ import { BehaviorSubject, catchError, Observable, tap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { StorageKeys } from '../constants/storage-keys';
 import { AuthResponse, LoginDto, RefreshResponse, SignupDto, User } from '../models/auth.model';
-import { ErrorAuthResult, SamlAuthResult, SessionAuthResult } from '../models/sso-test.model';
+import { SessionAuthResult } from '../models/sso-test.model';
 
 @Injectable({
     providedIn: 'root',
@@ -208,6 +208,24 @@ export class Auth {
      */
     clearSession(): Observable<void> {
         return this.http.delete<void>(`${this.apiUrl}/session/clear`);
+    }
+
+    /**
+     * Logout via OIDC RP-Initiated Logout
+     * Redirects to the IdP to terminate the IdP session
+     */
+    oidcLogout(idToken: string, configId: string): void {
+        const logoutUrl = `${this.apiUrl}/oidc/logout?idToken=${encodeURIComponent(idToken)}&configId=${encodeURIComponent(configId)}`;
+        window.location.href = logoutUrl;
+    }
+
+    /**
+     * Logout via SAML Single Logout (SP-Initiated SLO)
+     * Redirects to the IdP to terminate the IdP session
+     */
+    samlLogout(): void {
+        const logoutUrl = `${this.apiUrl}/saml/logout`;
+        window.location.href = logoutUrl;
     }
 
     // validateSamlResponse(

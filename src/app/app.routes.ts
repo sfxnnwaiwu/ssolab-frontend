@@ -46,6 +46,20 @@ export const routes: Routes = [
                         (m) => m.SamlCallback
                     ),
             },
+            {
+                path: 'logout-success',
+                loadComponent: () =>
+                    import('./features/saml/logout-success/logout-success').then(
+                        (m) => m.LogoutSuccess
+                    ),
+            },
+            {
+                path: 'logout-complete',
+                loadComponent: () =>
+                    import('./features/saml/logout-success/logout-success').then(
+                        (m) => m.LogoutSuccess
+                    ),
+            },
         ],
     },
     {
@@ -62,6 +76,20 @@ export const routes: Routes = [
                 loadComponent: () =>
                     import('./features/oidc/oidc-callback/oidc-callback').then(
                         (m) => m.OidcCallback
+                    ),
+            },
+            {
+                path: 'logout-success',
+                loadComponent: () =>
+                    import('./features/oidc/logout-success/logout-success').then(
+                        (m) => m.LogoutSuccess
+                    ),
+            },
+            {
+                path: 'logout-complete',
+                loadComponent: () =>
+                    import('./features/oidc/logout-success/logout-success').then(
+                        (m) => m.LogoutSuccess
                     ),
             },
         ],
