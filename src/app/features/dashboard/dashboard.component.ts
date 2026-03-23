@@ -1,20 +1,23 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { DashboardConfigurations } from '../../core/models/configuration.model';
 import { Auth } from '../../core/services/auth';
 import { DashboardService } from '../../core/services/dashboard.service';
+import { ChangePasswordComponent } from './change-password/change-password.component';
 
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, RouterLink],
+    imports: [CommonModule, RouterLink, ChangePasswordComponent],
     templateUrl: `./dashboard.component.html`,
 })
 export class DashboardComponent implements OnInit {
     private readonly authService = inject(Auth);
     private readonly dashboardService = inject(DashboardService);
     private readonly router = inject(Router);
+
+    @ViewChild(ChangePasswordComponent) changePasswordComponent?: ChangePasswordComponent;
 
     readonly currentUser = this.authService.currentUser;
     readonly loading = signal(false);
@@ -56,6 +59,10 @@ export class DashboardComponent implements OnInit {
 
     logout(): void {
         this.authService.logout().subscribe();
+    }
+
+    openChangePassword(): void {
+        this.changePasswordComponent?.openModal();
     }
 
     formatDate(dateString: string): string {

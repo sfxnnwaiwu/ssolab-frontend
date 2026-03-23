@@ -25,6 +25,22 @@ export const routes: Routes = [
             import('./features/auth/signup/signup.component').then((m) => m.SignupComponent),
     },
     {
+        path: 'forgot-password',
+        canActivate: [guestGuard],
+        loadComponent: () =>
+            import('./features/auth/forgot-password/forgot-password.component').then(
+                (m) => m.ForgotPasswordComponent
+            ),
+    },
+    {
+        path: 'reset-password',
+        canActivate: [guestGuard],
+        loadComponent: () =>
+            import('./features/auth/reset-password/reset-password.component').then(
+                (m) => m.ResetPasswordComponent
+            ),
+    },
+    {
         path: 'dashboard',
         canActivate: [authGuard],
         loadComponent: () =>

@@ -58,12 +58,6 @@
                 },
                 "serve": {
                     "builder": "@angular/build:dev-server",
-                    "options": {
-                        "allowedHosts": [
-                            "suspected-walking-acquisition-interface.trycloudflare.com",
-                            ".trycloudflare.com"
-                        ]
-                    },
                     "configurations": {
                         "production": {
                             "buildTarget": "testing-application:build:production"
